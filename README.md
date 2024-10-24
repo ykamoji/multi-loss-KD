@@ -1,2 +1,1 @@
-# multi-loss-KD
-Multi-Loss Distillation Framework
+# Multi Loss Distillation Framework
