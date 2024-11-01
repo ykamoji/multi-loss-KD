@@ -237,7 +237,7 @@ def create_metadata(dataSetPath, Metadata):
 
 if __name__ == '__main__':
 
-    with open('config.yaml', 'r') as file:
+    with open('../config.yaml', 'r') as file:
         config = yaml.load(file, get_yaml_loader())
 
     x = json.dumps(config)

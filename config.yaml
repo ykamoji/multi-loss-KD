@@ -69,3 +69,33 @@ Distillation:
   UseATSLoss : False
   UseAttentionLoss: False
   UseHiddenLoss : False
+
+Metadata:
+  Limit: True
+  Value: 0.1
+
+Visualization:
+  Action: False
+  Model:
+    Name: google/vit-base-patch16-224
+    CachePath: model/
+    OutputPath: tuned-model/
+    Index: -1
+  Input: images   # kaggle datasets download -d hieu1344/imagenetsample
+  Output: featureOutputs/
+  UseOnlyCLSForATS: True
+  Strategies: [plus] # Options: rollout plus skipplus_first skipplus_last And/Or in combination
+  Features:
+    CompareFeatures: False
+    ThresholdScore: 3
+    Show: False
+    Save: False
+  Masking:
+    Action: True
+    ShowMasking: False
+    SaveMasking: True
+  Plot:
+    PlotMaskedCurves: False
+    ThresholdScore: 0 # 0 means everything will be considered. >=1 means only the important patches will be chosen.
+    BatchSize: 4
+    MaskedPerc: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100] # in %

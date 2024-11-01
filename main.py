@@ -1,7 +1,8 @@
 from fineTuning import fine_tuning
 from distillation import run_distillation
 from visualisation import visualize
-from prepare_metadata import create_metadata
+from dataset.prepare_metadata import create_metadata
+from dataset.prepare_captions import create_captions
 from utils.argUtils import CustomObject, get_yaml_loader
 import yaml
 import json
@@ -17,6 +18,8 @@ def start(configPath):
 
     if Args.Common.DataSet.Name == 'imageNet':
         create_metadata(Args.Common.DataSet.Path, Args.Metadata)
+    elif Args.Common.DataSet.Name == 'coco':
+        create_captions(Args.Common.DataSet.Path, Args.Metadata)
 
     if Args.FineTuning.Action:
         fine_tuning(Args)
