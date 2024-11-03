@@ -39,18 +39,33 @@ def get_distillation_training_args(output_path, hyperparameters):
     )
 
 
+def get_student_config(Distillation, teacher_config):
+
+    student_config = ViTConfig.from_pretrained(Distillation.StudentModel.Name, num_labels=teacher_config.num_labels,
+                                               cache_dir=Distillation.StudentModel.CachePath,
+                                               ignore_mismatched_sizes=True)
+
+    Hidden = Distillation.Hidden
+    use_hidden_classifier = False
+    hidden_classifier_dim = student_config.hidden_size
+    if Hidden.UseLoss and Hidden.WithClassifier:
+        use_hidden_classifier = True
+        if Hidden.MatchClassifierOutputDimToTeacher:
+            hidden_classifier_dim = teacher_config.hidden_size
+
+    Attribution = Distillation.Attribution
+    use_attribution_classifier = False
+    if Attribution.UseLoss and Attribution.WithClassifier:
+        use_attribution_classifier = True
+
+    student_config.use_hidden_classifier = use_hidden_classifier
+    student_config.hidden_classifier_dim = hidden_classifier_dim
+    student_config.use_attribution_classifier = use_attribution_classifier
+
+    return student_config
+
+
 def run_distillation(Args):
-    try:
-        if Args.Distillation.Model.UseLocal:
-            fine_tuned_model_path = get_model_path('FineTuned', Args)
-        else:
-            fine_tuned_model_path = ''
-        teacher_model = ViTForImageClassification.from_pretrained(fine_tuned_model_path)
-    except Exception as e:
-        print(f"Warning: {e}. Using huggingface pretrained model.")
-        teacher_model = ViTForImageClassification.from_pretrained(Args.Distillation.Model.Name,
-                                                                  cache_dir=Args.Distillation.Model.CachePath)
-    # print(teacher_model)
 
     _, training_data, testing_data = build_dataset(True, Args)
 
@@ -61,24 +76,30 @@ def run_distillation(Args):
     else:
         classificationMode = ViTForImageClassification
 
+    try:
+        if Args.Distillation.Model.UseLocal:
+            fine_tuned_model_path = get_model_path('FineTuned', Args)
+        else:
+            fine_tuned_model_path = ''
+        teacher_model = classificationMode.from_pretrained(fine_tuned_model_path)
+    except Exception as e:
+        print(f"Warning: {e}. Using huggingface pretrained model.")
+        teacher_model = classificationMode.from_pretrained(Args.Distillation.Model.Name,
+                                                                  cache_dir=Args.Distillation.Model.CachePath)
+
+    # print(teacher_model)
+
+    student_config = get_student_config(Args.Distillation, teacher_model.config)
+
     model = Args.Distillation.StudentModel.Name
-
-    if Args.Distillation.StudentModel.LoadCheckPoint:
-        model = get_checkpoint_path('Distilled', Args)
-
     if Args.Distillation.RandomWeights:
-
-        student_config = ViTConfig.from_pretrained(model, num_labels=teacher_model.config.num_labels,
-                                                   cache_dir=Args.Distillation.StudentModel.CachePath,
-                                                   ignore_mismatched_sizes=True)
-
         student_model = classificationMode._from_config(config=student_config)
-
     else:
+        if Args.Distillation.StudentModel.LoadCheckPoint:
+            model = get_checkpoint_path('Distilled', Args)
 
-        student_model = classificationMode.from_pretrained(model, num_labels=teacher_model.config.num_labels,
-                                                           cache_dir=Args.Distillation.StudentModel.CachePath,
-                                                           ignore_mismatched_sizes=True)
+        student_model = classificationMode.from_pretrained(model, cache_dir=Args.Distillation.StudentModel.CachePath,
+                                                           ignore_mismatched_sizes=True, config=student_config)
 
     output_path = prepare_output_path('Distilled', Args)
 

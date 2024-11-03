@@ -1,5 +1,6 @@
 from fineTuning import fine_tuning
 from distillation import run_distillation
+from evaluation import evaluate
 from visualisation import visualize
 from dataset.prepare_metadata import create_metadata
 from dataset.prepare_captions import create_captions
@@ -20,6 +21,9 @@ def start(configPath):
         create_metadata(Args.Common.DataSet.Path, Args.Metadata)
     elif Args.Common.DataSet.Name == 'coco':
         create_captions(Args.Common.DataSet.Path, Args.Metadata)
+
+    if Args.Evaluate.Action:
+        evaluate(Args)
 
     if Args.FineTuning.Action:
         fine_tuning(Args)
