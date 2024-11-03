@@ -1,5 +1,6 @@
 from fineTuning import fine_tuning
 from distillation import run_distillation
+from evaluation import evaluate
 from visualisation import visualize
 from dataset.prepare_metadata import create_metadata
 from dataset.prepare_captions import create_captions
@@ -26,6 +27,9 @@ def start(configPath):
 
     if Args.Distillation.Action:
         run_distillation(Args)
+
+    if Args.Evaluate.Action:
+        evaluate(Args)
 
     if Args.Visualization.Action:
         visualize(Args)
