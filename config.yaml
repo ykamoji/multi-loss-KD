@@ -1,10 +1,10 @@
 Common:
   Results: Results/
   Metrics:
-    Name: acc,topk
+    Name: bleu
     CachePath: metrics/
   DataSet:
-    Name: imageNet
+    Name: coco
     Label: label
     Path: !ENV ${DATASET_PATH} # Update the dataset path here or add DATASET_PATH to environment.
     Train: '' # Set <>% or <> exact number of batches to train
@@ -13,7 +13,7 @@ Common:
 FineTuning:
   Action: False
   Model:
-    Name: google/vit-large-patch16-224
+    Name: google/pix2struct-base
     CachePath : model/
     OutputPath: tuned-model/
     Index: -1
@@ -76,7 +76,7 @@ Distillation:
     MatchClassifierOutputDimToTeacher: False
 
 Evaluate:
-  Action: True
+  Action: False
   Model:
     UseLocal: False
     Type: FineTuned # or Distilled

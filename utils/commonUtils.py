@@ -1,7 +1,7 @@
 import yaml
 import re
 
-IGNORE_KEYS = ['cls_logits', 'distillation_logits', 'hidden_states', 'attentions', 'attributions']
+IGNORE_KEYS = ['cls_logits', 'distillation_logits', 'hidden_states', 'attentions', 'attributions', 'encoder_last_hidden_state']
 
 
 def represent_bool(self, data):
