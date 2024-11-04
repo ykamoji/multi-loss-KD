@@ -1,2 +1,3 @@
 from models_utils.modeling_vit import ViTForImageClassification
 from models_utils.modeling_deit import DeiTForImageClassification, DeiTForImageClassificationWithTeacher
+from models_utils.modeling_pix2struct import Pix2StructForConditionalGeneration

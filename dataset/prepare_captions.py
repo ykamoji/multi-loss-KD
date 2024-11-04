@@ -63,11 +63,11 @@ def write_metadata(dataSetPath, data_to_write):
             writer = csv.writer(metadata)
             writer.writerow(["inputPath", "label"])
     start = time.time()
-    train_count, valid_count = 0, 0
+
     for split in ["train", "valid"]:
         with open(f"{dataSetPath}/metadata_{split}.csv", 'a', newline='') as metadata:
             writer = csv.writer(metadata)
-            writer.writerow(data_to_write[split])
+            writer.writerows(data_to_write[split])
 
     with open(f"{dataSetPath}/metadata.csv", 'a', newline='') as metadata:
         writer = csv.writer(metadata)
@@ -83,6 +83,7 @@ def create_captions(dataSetPath, Metadata):
     if not os.path.exists(f"{dataSetPath}/metadata.csv") or \
             not os.path.exists(f"{dataSetPath}/metadata_train.csv") or \
             not os.path.exists(f"{dataSetPath}/metadata_valid.csv"):
+
 
         data_to_write = process_metadata(dataSetPath)
 
