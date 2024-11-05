@@ -7,7 +7,6 @@ from utils.commonUtils import start_training
 import warnings
 
 warnings.filterwarnings('ignore')
-logging.set_verbosity_error()
 
 
 def get_fine_tuning_trainer_args(output_path, hyperparameters, args_fn):

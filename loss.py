@@ -1,4 +1,4 @@
-from transformers import Trainer
+from transformers import Seq2SeqTrainer
 from utils.featureUtils import get_device
 from process_datasets import processInputs
 import torch
@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class DistillationTrainer(Trainer):
+class DistillationTrainer(Seq2SeqTrainer):
     def __init__(self,
                  teacher_model=None,
                  student_model=None,
@@ -20,6 +20,10 @@ class DistillationTrainer(Trainer):
         self.teacher = teacher_model
         self.student = student_model
         self.distillation_loss_fun = nn.KLDivLoss(reduction="sum", log_target=True)
+
+        self.encoder_decoder_model = False
+        if "Pix2" in student_model.config.architectures[0]:
+            self.encoder_decoder_model = True
 
         device = get_device()
         self.teacher.to(device)
@@ -230,10 +234,17 @@ class DistillationTrainer(Trainer):
 
         if not self.printed:
 
+            if self.encoder_decoder_model:
+                hidden_states = [teacher_output.encoder_hidden_states, student_output.encoder_hidden_states]
+                attentions = [teacher_output.encoder_attentions, student_output.encoder_attentions]
+            else:
+                hidden_states = [teacher_output.hidden_states, student_output.hidden_states]
+                attentions = [teacher_output.attentions, student_output.attentions]
+
             for model_name, logits, hidden_layers, attn_layers, attr_layers, ats_layers \
                     in zip(["Teacher", "Student"], [teacher_output.logits, student_output.logits],
-                           [teacher_output.hidden_states, student_output.hidden_states],
-                           [teacher_output.attentions, student_output.attentions],
+                           hidden_states,
+                           attentions,
                            [teacher_output.attributions, student_output.attributions],
                            [teacher_output.ats_attentions, student_output.ats_attentions]):
 
@@ -260,9 +271,9 @@ class DistillationTrainer(Trainer):
         if self.current_epoch != self.state.epoch and self.state.global_step % self.state.logging_steps == 0:
             self.writer.add_scalar(key, value, global_step=self.state.global_step, walltime=5)
 
-    def compute_loss(self, student, inputs, return_outputs=False):
+    def compute_loss(self, student, inputs, return_outputs=False, num_items_in_batch=None):
 
-        if self.configArgs.Common.DataSet.Name == 'imageNet':
+        if not self.encoder_decoder_model:
             inputs = processInputs(inputs, self.configArgs.Distillation.Model)
 
         for k, v in inputs.items():
@@ -319,12 +330,19 @@ class DistillationTrainer(Trainer):
         loss = (1. - self.alpha) * student_loss + self.alpha * distillation_loss
 
         if self.use_attention_loss:
-            attn_loss = self._attn_loss(teacher_output.attentions, student_output.attentions)
+
+            if self.encoder_decoder_model:
+                attn_loss = self._attn_loss(teacher_output.encoder_attentions, student_output.encoder_attentions)
+            else:
+                attn_loss = self._attn_loss(teacher_output.attentions, student_output.attentions)
             self.tb_log('Loss/Attention', attn_loss.item())
             loss += attn_loss
 
         if self.use_hidden_loss:
-            hidden_loss = self._layer_loss(teacher_output.hidden_states, student_output.hidden_states)
+            if self.encoder_decoder_model:
+                hidden_loss = self._layer_loss(teacher_output.encoder_hidden_states, student_output.encoder_hidden_states)
+            else:
+                hidden_loss = self._layer_loss(teacher_output.hidden_states, student_output.hidden_states)
             self.tb_log('Loss/Hidden', hidden_loss.item())
             loss += hidden_loss
 

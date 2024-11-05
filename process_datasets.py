@@ -77,8 +77,6 @@ def processCocoInputs(inputs, Model):
 
     image_inputs['labels'] = feature_extractor(text=inputs['labels'], return_tensors="pt", padding=True).input_ids
 
-    # image_inputs['sequence'] = inputs['labels']
-
     return image_inputs
 
 

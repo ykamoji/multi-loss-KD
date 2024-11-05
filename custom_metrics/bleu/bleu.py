@@ -319,8 +319,8 @@ class Bleu(evaluate.Metric):
 
         metrics = {"bleu": bleu}
 
-        for i in range(1, max_order+1):
-            metrics[f"bleu_prec{i}"] = precisions[i]
+        for i in range(max_order):
+            metrics[f"bleu_prec{i+1}"] = precisions[i]
 
         return metrics
 
