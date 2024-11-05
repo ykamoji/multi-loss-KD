@@ -36,12 +36,12 @@ Distillation:
   Action: False
   Model:
     UseLocal: False
-    Name: google/vit-large-patch16-224
+    Name: google/pix2struct-textcaps-base
     CachePath: model/
     OutputPath: tuned-model/
     Index: -1   # set -1 to perform distillation with the last fine-tuned model of that dataset otherwise set the index manually.
   StudentModel:
-    Name: google/vit-base-patch16-224
+    Name: google/pix2struct-textcaps-base
     CachePath: model/
     OutputPath: distilled-model/
     Index: -1

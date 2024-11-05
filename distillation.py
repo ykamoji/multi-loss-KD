@@ -1,6 +1,6 @@
-from process_datasets import build_dataset, build_metrics, collate_fn, collate_imageNet_fn
-from transformers import TrainingArguments, ViTConfig
-from models_utils import ViTForImageClassification, DeiTForImageClassificationWithTeacher
+from process_datasets import build_dataset, build_metrics, collate_fn, collate_imageNet_fn, collate_coco_fn_tuning_fn
+from transformers import ViTConfig, Seq2SeqTrainingArguments, Pix2StructConfig
+from models_utils import ViTForImageClassification, DeiTForImageClassificationWithTeacher, Pix2StructForConditionalGeneration
 from transformers.training_args import OptimizerNames
 from loss import DistillationTrainer
 from torch.utils.tensorboard import SummaryWriter
@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 
 
 def get_distillation_training_args(output_path, hyperparameters):
-    return TrainingArguments(
+    return Seq2SeqTrainingArguments(
         output_dir=output_path + 'training/',
         logging_dir=output_path + 'logs/',
         per_device_train_batch_size=hyperparameters.TrainBatchSize,
@@ -27,7 +27,7 @@ def get_distillation_training_args(output_path, hyperparameters):
         warmup_ratio=hyperparameters.WarmUpRatio,
         weight_decay=hyperparameters.WeightDecay,
         save_total_limit=2,
-        metric_for_best_model='accuracy',
+        metric_for_best_model='bleu',
         greater_is_better=True,
         optim=OptimizerNames.ADAMW_HF,
         remove_unused_columns=False,
@@ -36,31 +36,37 @@ def get_distillation_training_args(output_path, hyperparameters):
         seed=42,
         gradient_accumulation_steps=hyperparameters.Steps.GradientAccumulation,
         label_names=['labels'],
+        half_precision_backend="auto",
+        predict_with_generate=True,
     )
 
 
 def get_student_config(Distillation, teacher_config):
 
-    student_config = ViTConfig.from_pretrained(Distillation.StudentModel.Name, num_labels=teacher_config.num_labels,
-                                               cache_dir=Distillation.StudentModel.CachePath,
-                                               ignore_mismatched_sizes=True)
+    if 'pix' in Distillation.StudentModel.Name:
+        student_config = Pix2StructConfig.from_pretrained(Distillation.StudentModel.Name,
+                                                          cache_dir=Distillation.StudentModel.CachePath)
+    else:
+        student_config = ViTConfig.from_pretrained(Distillation.StudentModel.Name, num_labels=teacher_config.num_labels,
+                                                   cache_dir=Distillation.StudentModel.CachePath,
+                                                   ignore_mismatched_sizes=True)
 
-    Hidden = Distillation.Hidden
-    use_hidden_classifier = False
-    hidden_classifier_dim = student_config.hidden_size
-    if Hidden.UseLoss and Hidden.WithClassifier:
-        use_hidden_classifier = True
-        if Hidden.MatchClassifierOutputDimToTeacher:
-            hidden_classifier_dim = teacher_config.hidden_size
+        Hidden = Distillation.Hidden
+        use_hidden_classifier = False
+        hidden_classifier_dim = student_config.hidden_size
+        if Hidden.UseLoss and Hidden.WithClassifier:
+            use_hidden_classifier = True
+            if Hidden.MatchClassifierOutputDimToTeacher:
+                hidden_classifier_dim = teacher_config.hidden_size
 
-    Attribution = Distillation.Attribution
-    use_attribution_classifier = False
-    if Attribution.UseLoss and Attribution.WithClassifier:
-        use_attribution_classifier = True
+        Attribution = Distillation.Attribution
+        use_attribution_classifier = False
+        if Attribution.UseLoss and Attribution.WithClassifier:
+            use_attribution_classifier = True
 
-    student_config.use_hidden_classifier = use_hidden_classifier
-    student_config.hidden_classifier_dim = hidden_classifier_dim
-    student_config.use_attribution_classifier = use_attribution_classifier
+        student_config.use_hidden_classifier = use_hidden_classifier
+        student_config.hidden_classifier_dim = hidden_classifier_dim
+        student_config.use_attribution_classifier = use_attribution_classifier
 
     return student_config
 
@@ -69,12 +75,13 @@ def run_distillation(Args):
 
     _, training_data, testing_data = build_dataset(True, Args)
 
-    compute_metrics = build_metrics(Args.Common.Metrics)
-
-    if Args.Distillation.UseDistTokens:
-        classificationMode = DeiTForImageClassificationWithTeacher
+    if "pix" in Args.Distillation.Model.Name:
+        classificationMode = Pix2StructForConditionalGeneration
     else:
-        classificationMode = ViTForImageClassification
+        if Args.Distillation.UseDistTokens:
+            classificationMode = DeiTForImageClassificationWithTeacher
+        else:
+            classificationMode = ViTForImageClassification
 
     try:
         if Args.Distillation.Model.UseLocal:
@@ -107,11 +114,19 @@ def run_distillation(Args):
 
     writer = SummaryWriter(distillation_args.logging_dir + 'loss/', max_queue=10, flush_secs=10)
 
+    compute_metrics = build_metrics(Args.Common.Metrics, Args.Distillation.StudentModel)
+
+    data_collator = collate_fn
+    if Args.Common.DataSet.Name == "imageNet":
+        data_collator = collate_imageNet_fn
+    elif Args.Common.DataSet.Name == "coco":
+        data_collator = collate_coco_fn_tuning_fn
+
     distillation_trainer = DistillationTrainer(
         teacher_model=teacher_model,
         student_model=student_model,
         args=distillation_args,
-        data_collator=collate_fn if Args.Common.DataSet.Name != "imageNet" else collate_imageNet_fn,
+        data_collator=data_collator,
         compute_metrics=compute_metrics,
         train_dataset=training_data,
         eval_dataset=testing_data,
