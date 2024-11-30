@@ -317,10 +317,10 @@ class Bleu(evaluate.Metric):
         )
         (bleu, precisions, _, _, _, _) = score
 
-        metrics = {"bleu": f"{bleu:.10f}"}
+        metrics = {"bleu": bleu}
 
         for i in range(max_order):
-            metrics[f"bleu_prec{i+1}"] = f"{precisions[i]:.10f}"
+            metrics[f"bleu_prec{i+1}"] = precisions[i]
 
         return metrics
 

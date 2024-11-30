@@ -74,5 +74,5 @@ class Anls(evaluate.Metric):
 
         avg_score /= len(predictions)
 
-        return {"anls": f"{avg_score:.10f}"}
+        return {"anls": avg_score}
 

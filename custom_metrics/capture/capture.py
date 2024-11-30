@@ -80,5 +80,5 @@ class Anls(evaluate.Metric):
 
         score = evaluator.compute_score(references, predictions)
 
-        return {"capture": f"{score:.10f}"}
+        return {"capture": score}
 
