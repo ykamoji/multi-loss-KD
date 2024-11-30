@@ -76,7 +76,7 @@ class Anls(evaluate.Metric):
         references = {idx:ref for idx, ref in enumerate(references)}
         predictions = {idx:[p] for idx, p in enumerate(predictions)}
 
-        evaluator = CAPTURE()
+        evaluator = CAPTURE(soft_matching=False)
 
         score = evaluator.compute_score(references, predictions)
 
