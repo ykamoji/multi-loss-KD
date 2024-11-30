@@ -1,7 +1,7 @@
 Common:
   Results: Results/
   Metrics:
-    Name: bleu
+    Name: bleu,anlsm,capture
     CachePath: metrics/
   DataSet:
     Name: coco
@@ -13,7 +13,7 @@ Common:
 FineTuning:
   Action: False
   Model:
-    Name: google/pix2struct-base
+    Name: google/pix2struct-textcaps-base
     CachePath : model/
     OutputPath: tuned-model/
     Index: -1

@@ -30,6 +30,7 @@ class BaseModelOutput(ModelOutput):
     norms: Optional[Tuple[torch.FloatTensor, ...]] = None
     last_value_layer: torch.FloatTensor = None
     ats_attentions: Optional[Tuple[torch.FloatTensor, ...]] = None
+    attributions: Optional[Tuple[torch.FloatTensor, ...]] = None
 
 
 @dataclass
