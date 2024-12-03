@@ -827,6 +827,7 @@ class Pix2StructVisionModel(Pix2StructPreTrainedModel):
         sequence_output = encoder_outputs[0]
         sequence_output = self.layernorm(sequence_output)
 
+        final_norms = ()
         if output_norms or output_globenc:
             hidden_state = encoder_outputs.hidden_states[-2]
             attention = encoder_outputs.attentions[-1]

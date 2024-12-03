@@ -34,6 +34,7 @@ def get_fine_tuning_trainer_args(output_path, hyperparameters, args_fn):
         load_best_model_at_end=True,
         seed=42,
         half_precision_backend="auto",
+        report_to='tensorboard',
         gradient_accumulation_steps=hyperparameters.Steps.GradientAccumulation,
         predict_with_generate=True
     )
